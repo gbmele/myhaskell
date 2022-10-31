@@ -1,1 +1,4 @@
-how the hell supposed to learn about a monad..1....
+how to start a new console in in visual studio code.
+
+
+dotnet new console -lang "F#" -o myproject etc etc 
