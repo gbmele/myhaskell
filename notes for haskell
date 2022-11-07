@@ -7,5 +7,7 @@ wordsWhen p s =  case dropWhile p s of
 
 splitcomma = wordsWhen (==',')
 
-
+gm_CSV fileName = do
+    fileText <- readFile fileName
+    return $ ((map splitcomma) . lines)  fileText
 
