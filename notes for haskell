@@ -1,5 +1,11 @@
 just do haskell wholemeal coding from now on
 
-gm_RCV   RCV --->  ((row,col),v) === row col has a value === CAN DO YOUR OWN SPREADSHEET WITH THIS, ROSTERS are a RCV 
+wordsWhen p s =  case dropWhile p s of
+                      "" -> []
+                      s' -> w : wordsWhen p s''
+                            where (w, s'') = break p s'
 
-gm_CSV 
+splitcomma = wordsWhen (==',')
+
+
+
