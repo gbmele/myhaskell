@@ -11,3 +11,9 @@ gm_CSV fileName = do
     fileText <- readFile fileName
     return $ ((map splitcomma) . lines)  fileText
 
+================================================
+You can use zip to provide items with indexes:
+
+Prelude> zip "asdf" [0..]
+[('a',0),('s',1),('d',2),('f',3)]
+================================================
