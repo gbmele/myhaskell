@@ -1,8 +1,21 @@
-ffff
-and this is a new line
+%%ffff
+%%and this is a new line
 array[docs,1..days] of var int: REQUESTS = array2d(docs,1..days,
-[1,4,4,4,99,0,0,0,0,0,0,0,4,4,0,0,0,1,0,0,0]
+[92,4,4,4,99,99,777,0,0,0,0,0,4,777,0,0,4,99,91,92,777]
  ); % end of array dump 
+
 constraint count([RG,..],l)=3;
-constraint count([GM,..],l)=2;
-constraint count([DB,..],l)=0;
+
+constraint count([GM,..],l)=1;
+
+constraint count([DB,..],l)=1;
+
+constraint forall(doc in docs, day in 1..days)
+  (if     REQUESTS[ doc, day ] = 4  then roster[ doc, day ]   =  l 
+   elseif REQUESTS[ doc, day ] = 99 then roster[ doc, day ]   =  o 
+   elseif REQUESTS[ doc, day ] = 1  then roster[ doc, day ]   =  a 
+   elseif REQUESTS[ doc, day ] = 91 then roster[ doc, day ]  !=  a 
+   elseif REQUESTS[ doc, day ] = 2  then roster[ doc, day ]   =  p 
+   elseif REQUESTS[ doc, day ] = 92 then roster[ doc, day ]  !=  p 
+   else true
+   endif);
