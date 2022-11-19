@@ -1,12 +1,4 @@
-import Data.Char
-
-mm "s"   = 1 
-mm "OTH" = 2
-mm "_"   = 0
-mm "AL"  = 4
-mm "AL10" = 5
---mm (a:_) = 5
-mm _     = 99
+import Gbm
 
 
 identityCheck name
@@ -15,31 +7,47 @@ identityCheck name
   | otherwise = False
 
 
-mmm x
-  | x == "s" = 1
-  | otherwise = 99
-
-massert  arg result  =  (== result)(mm arg) 
-
 main = do
- putStrLn "Hello"
- putStrLn "World"
- --print $ mmm "O"
- --print $ mmm "OTH"
-
- print $ map mm ["1","_","s","aOTH","AL","a99","AL10"]
-
  print $ massert "s" 1
- print $ massert "OTH" 2
- print $ massert "AL10" 5
+ print $ massert "OTH" 0
+ print $ massert "AL10" 4
+ print $ massert "U" 99
  print $ (==1) (mmm "s")
+ print $ massert "U00:00-23:59" 99
+ print $ massert "L" 4
+
+
+
+ gg<- gm_CSV "requests7.txt"
+ print $ gg!!0
 
  writeFile "data.txt" "quick,OTH,AL10,LSL"
 
- ss <- readFile "data.txt"
- ss2 <- words ss
- print $ ss2
+ let ll = length [v | (d,v) <- (zip [1..] (gg!!0)), d `elem` doc1 ,v `elem` leave]
+ print $ length [v | (d,v) <- (zip [1..] (gg!!0)), d `elem` doc2, v `elem` leave]
+ print $ length [v | (d,v) <- (zip [1..] (gg!!0)), d `elem` doc3, v `elem` leave]
 
+ print $ map mm [v |(d,v)<-  (zip [1..] (gg!!0)), d `elem` [1..21]]
 
+ print $ fromEnum RG
 
- 
+ let dump = "requests.dzn"
+
+ writeFile dump "ffff\n"
+ appendFile dump "and this is a new line\n"
+ appendFile dump "array[docs,1..days] of var int: REQUESTS = array2d(docs,1..days,\n"
+ appendFile dump (show(map mm [v |(d,v)<-  (zip [1..] (gg!!0)), d `elem` [1..21]]))
+
+ appendFile dump "\n ); % end of array dump \n"
+
+ appendFile dump "constraint count([RG,..],l)=" 
+ appendFile dump  (show(length [v | (d,v) <- (zip [1..] (gg!!0)), d `elem` doc1 ,v `elem` leave]))
+ appendFile dump ";\n" 
+
+ appendFile dump  "constraint count([GM,..],l)="
+ appendFile dump  (show(length [v | (d,v) <- (zip [1..] (gg!!0)), d `elem` doc2 ,v `elem` leave]))
+ appendFile dump ";\n" 
+
+ appendFile dump  "constraint count([DB,..],l)="
+ appendFile dump  (show(length [v | (d,v) <- (zip [1..] (gg!!0)), d `elem` doc3 ,v `elem` leave]))
+ appendFile dump ";\n" 

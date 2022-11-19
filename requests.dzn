@@ -1,0 +1,8 @@
+ffff
+and this is a new line
+array[docs,1..days] of var int: REQUESTS = array2d(docs,1..days,
+[1,4,4,4,99,0,0,0,0,0,0,0,4,4,0,0,0,1,0,0,0]
+ ); % end of array dump 
+constraint count([RG,..],l)=3;
+constraint count([GM,..],l)=2;
+constraint count([DB,..],l)=0;
