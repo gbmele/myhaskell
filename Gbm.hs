@@ -1,13 +1,9 @@
 module Gbm where
-
 import Data.List
 
-assert False x = error "assertion failed!"
-assert _     x = x
 
 
-
-mm "0"       = 0               --  0 nuffin
+mm "0"       = 0                --  0 nuffin
 mm "A"       = 1               --  1 am
 mm "AM"      = 1               --  2 pm 
 mm "a"       = 1
@@ -17,26 +13,24 @@ mm "OTH"     = 0
 mm "AL"      = 4
 mm "L10"     = 4
 mm "L"       = 4
-mm "CL"      = 4
-mm "LPPA"    = 5
+mm "CL"      = 5
+mm "CONF"    = 5
+mm "LPPA"    = 6
 mm "UA"      = 91             -- 91 not AM 
 mm "UP"      = 92             -- 92 not PM 
-mm "U"       = 99
+mm "U"       = 99             -- just plain unavailable all day
 mm "U00:00-23:59" = 99
 mm "(U:_)"   = 99
 mm "777"     = 777
 mm _         = 0
 
 massert  arg result  =  (== result)(mm arg) 
-mmm x
- | x == "s"  = 1
- | otherwise = 99999
 
 
-leave = ["AL","L","L10","LPPA","CL"]
+leave = ["AL","L","L10","LPPA","CL","CONF"]
 
 data Docs =
-      ZERODOCS    -- take up the 0 index - dont use
+      DOCZERO    -- take up the 0 index - dont use
     | RG --1
     | GM --2
     | DB --3
@@ -50,21 +44,13 @@ data Docs =
 
 docset = [RG,GM,DB,CC,MC,RM,DL,ML]
 
-data Shifts = 
-     ZEROSHIFT
-   | AM
-   | PM
-   | OFF
-   | LEAVE
-   deriving (Enum, Show, Bounded)
-
 fE x = fromEnum x
 
 days x y = enumFromTo x y    
 
 di xx = 7
 
-doc1 = days  (0 + 1)      (1*(di 9))
+doc1 = days  (0 + 1)      (1*(di 3))
 doc2 = days  (1*(di 9)+1) (2*(di 9))
 doc3 = days  (2*(di 9)+1) (3*(di 9))
 doc4 = days  (3*(di 9)+1) (4*(di 9))
@@ -88,9 +74,9 @@ doc20 = days  (19*(di 9)+1) (20*(di 9))
 doc21 = days  (20*(di 9)+1) (21*(di 9))
 doc22 = days  (21*(di 9)+1) (22*(di 9))
 doc23 = days  (22*(di 9)+1) (23*(di 9))
-doc24 = days  (23*(di 9)+1) (25*(di 9))
-doc25 = days  (24*(di 9)+1) (26*(di 9))
-doc26 = days  (25*(di 9)+1) (27*(di 9))
+doc24 = days  (23*(di 9)+1) (24*(di 9))
+doc25 = days  (24*(di 9)+1) (25*(di 9))
+doc26 = days  (25*(di 9)+1) (26*(di 9))
 doc100 = days 1000 1000
 
 -- this array is 0 based - i need to start at 1 index
@@ -142,4 +128,10 @@ print_block x = mapM_ print x    -- why does this work
 
 get_column g c = [row !! c | row <- g]
 
+data Suit =
+   Spades
+ | Clubs
+ | Diamonds
+ | Hearts
+ deriving (Eq, Show, Enum)
 

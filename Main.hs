@@ -1,15 +1,15 @@
 import Gbm
 import Data.List
 import Debug.Trace
---import Text.Printf
-
-assert False x = error "assertion failed!"
-assert _     x = x
+import Text.Printf
 
 identityCheck name
   | name == "Walter" = True
   | name == "Krystal" = True
   | otherwise = False
+
+
+
 
 main = do
 
@@ -38,21 +38,25 @@ main = do
  let ggfile = "gg.txt"
  let newline = "\n"
  let quotes = ""
+ let requestarray = (map mm [v |(d,v)<-  (zip [1..] (gg!!0))] )       
  writeFile dump $  intercalate newline
     ["%%Requests",
      quotes ++ "array[docs,1..days]  of var int: REQUESTS = array2d(docs,1..days," ++ quotes,
-     quotes ++ show(map mm [v |(d,v)<-  (zip [1..] (gg!!0))])                      ++ quotes,
+     quotes ++ show(requestarray) ++ quotes,
+     --quotes ++ show(map mm [v |(d,v)<-  (zip [1..] (gg!!0))])                      ++ quotes,
      "); % end of array dump \n\n"]
 
 
  appendFile dump $ intercalate newline
                 ["constraint forall(doc in docs, day in 1..days)",
-                 "" ++ "(  if    REQUESTS[ doc, day ] = 4  then roster[ doc, day ]   =  l" ++ "",
-                 ""++  "  elseif REQUESTS[ doc, day ] = 99 then roster[ doc, day ]   =  o" ++ "",
+                 "" ++ "(  if    REQUESTS[ doc, day ] = 4  then roster[ doc, day ]   =  l" ++ "",  -- 4 annual leave
+                 ""++  "  elseif REQUESTS[ doc, day ] = 5  then roster[ doc, day ]   =  l" ++ "",  -- 5 conference leave
+                 ""++  "  elseif REQUESTS[ doc, day ] = 6  then roster[ doc, day ]   =  l" ++ "",  -- 6 LPPA leave
                  ""++  "  elseif REQUESTS[ doc, day ] = 1  then roster[ doc, day ]   =  a" ++ "",
-                 ""++  "  elseif REQUESTS[ doc, day ] = 91 then roster[ doc, day ]  !=  a" ++ "",
                  ""++  "  elseif REQUESTS[ doc, day ] = 2  then roster[ doc, day ]   =  p" ++ "",
+                 ""++  "  elseif REQUESTS[ doc, day ] = 91 then roster[ doc, day ]  !=  a" ++ "",
                  ""++  "  elseif REQUESTS[ doc, day ] = 92 then roster[ doc, day ]  !=  p" ++ "",
+                 ""++  "  elseif REQUESTS[ doc, day ] = 99 then roster[ doc, day ]   =  o" ++ "",
                  ""++  "  else true" ++"",
                  ""++  "  endif);"++ newline ++ newline]
 
@@ -65,4 +69,17 @@ main = do
 
  print $ show(docset)
  print $ "num of docs is " ++ show(length(docset))
- --print $ length(map mm [v |(d,v)<-  (zip [1..] (gg!!0))])
+ print $ "num of days is " ++ show(length(map mm [v |(d,v)<-  (zip [1..] (gg!!0))]))
+ print $ "length of requestarray is--" ++ show(length(requestarray))
+
+ print $ foldr (&&) True 
+    [mm "O"  == 0, 
+     mm "L"  == 4,
+     mm "AL" == 4,
+     length(docset) == 8,
+     length(requestarray)   == 56,
+     doc1 == [1..7],
+     doc2 == [8..14],
+     doc3 == [15..21]
+    ]
+
