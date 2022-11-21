@@ -1,1 +1,5 @@
-the quick brown fox jumps over
+constraint count([RG,..],l)=3;
+constraint count([GM,..],l)=1;
+constraint count([DB,..],l)=1;
+constraint count([CC,..],l)=0;
+constraint count([MC,..],l)=0;

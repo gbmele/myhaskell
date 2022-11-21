@@ -1,4 +1,12 @@
 module Gbm where
+
+import Data.List
+
+assert False x = error "assertion failed!"
+assert _     x = x
+
+
+
 mm "0"       = 0               --  0 nuffin
 mm "A"       = 1               --  1 am
 mm "AM"      = 1               --  2 pm 
@@ -20,7 +28,6 @@ mm "777"     = 777
 mm _         = 0
 
 massert  arg result  =  (== result)(mm arg) 
-
 mmm x
  | x == "s"  = 1
  | otherwise = 99999
@@ -29,21 +36,33 @@ mmm x
 leave = ["AL","L","L10","LPPA","CL"]
 
 data Docs =
-      ZZZZ
-    | RG
-    | GM 
-    | DB
-    | CC
-    | MC
+      ZERODOCS    -- take up the 0 index - dont use
+    | RG --1
+    | GM --2
+    | DB --3
+    | CC --4
+    | MC --5
+    | RM --6 
+    | DL --7
+    | ML --8
+    | DH --9
     deriving (Enum,Show,Bounded)
 
+docset = [RG,GM,DB,CC,MC,RM,DL,ML]
+
+data Shifts = 
+     ZEROSHIFT
+   | AM
+   | PM
+   | OFF
+   | LEAVE
+   deriving (Enum, Show, Bounded)
 
 fE x = fromEnum x
 
 days x y = enumFromTo x y    
 
 di xx = 7
-
 
 doc1 = days  (0 + 1)      (1*(di 9))
 doc2 = days  (1*(di 9)+1) (2*(di 9))
@@ -64,30 +83,26 @@ doc15 = days  (14*(di 9)+1) (15*(di 9))
 doc16 = days  (15*(di 9)+1) (16*(di 9))
 doc17 = days  (16*(di 9)+1) (17*(di 9))
 doc18 = days  (17*(di 9)+1) (18*(di 9))
-doc19 = days  (18*(di 9)+1) (199*(di 9))
+doc19 = days  (18*(di 9)+1) (19*(di 9))
 doc20 = days  (19*(di 9)+1) (20*(di 9))
 doc21 = days  (20*(di 9)+1) (21*(di 9))
 doc22 = days  (21*(di 9)+1) (22*(di 9))
 doc23 = days  (22*(di 9)+1) (23*(di 9))
-doc24 = days  (11*(di 9)+1) (12*(di 9))
-doc25 = days  (11*(di 9)+1) (12*(di 9))
-doc26 = days  (11*(di 9)+1) (12*(di 9))
+doc24 = days  (23*(di 9)+1) (25*(di 9))
+doc25 = days  (24*(di 9)+1) (26*(di 9))
+doc26 = days  (25*(di 9)+1) (27*(di 9))
 doc100 = days 1000 1000
 
 -- this array is 0 based - i need to start at 1 index
-docs = [[199..199],doc1,doc2,doc3,doc4,doc5]
+docs = [[199..199],doc1,doc2,doc3,doc4,doc5,doc6,doc7,doc8]
+ --,doc9,doc10,doc11,doc12,doc13,
+ --                 doc14,doc15,doc16,doc17,doc18,doc19,doc20,doc21,doc22,doc23,doc24,doc25,doc26]
 
 get_doc arr doc = arr!!(fromEnum doc)
 
+--         (show(length [v | (d,v) <- (zip [1..] (gg!!0)), d `elem` (get_doc docs RG) ,v `elem` leave])),
 
-new_row c  = [ 0 | _ <- [1..c]]
-
-block r c  = [ new_row c | _ <- [1..r]]
-
-print_block x = mapM_ print x    -- why does this work
-
-get_column g c = [row !! c | row <- g]
-
+leave_count arr doc = (show(length [v | (d,v) <- (zip [1..] (arr!!0)), d `elem` (get_doc docs doc) ,v `elem` leave]))
 
 wordsWhen p s =  case dropWhile p s of
                       "" -> []
@@ -109,5 +124,22 @@ gm_CSV fileName = do
     return $ ((map splitcomma) . lines) fileText
 
 rcv array index_size row col = array!!0!!((row-1)*index_size+col-1)
+
+
+--writeNestedList :: Show a => FileName -> [[a]] -> IO ()
+--writeNestedList fileName xss =
+--    do
+--       fh <- openFile  fileName  WriteMode  -- get a file handle
+--       mapM_  ((hPutStrLn fh) . show)  xss
+--       hClose fh
+
+
+new_row c  = [ 0 | _ <- [1..c]]
+
+block r c  = [ new_row c | _ <- [1..r]]
+
+print_block x = mapM_ print x    -- why does this work
+
+get_column g c = [row !! c | row <- g]
 
 

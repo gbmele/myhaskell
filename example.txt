@@ -1,0 +1,34 @@
+main = do
+    str <- readFile "myFile.txt"
+
+        -- Split the file into lines
+    let fileLines :: [String]
+        fileLines = lines str
+    
+        -- Tag each line with its index (starting from 0)
+        taggedLines :: [(Int, String)]
+        taggedLines = zip [0..] fileLines
+
+        -- Modify the line if `shouldChange` is `True`
+        processedLines :: [String]
+        processedLines = map process taggedLines
+
+        -- Now join all the lines back together again
+        joinedLines :: String
+        joinedLines = unlines processedLines
+
+    writeFile "outFile.txt" joinedLines
+
+
+You can make that much shorter if you combine all of that like this:
+
+process :: Int -> String -> String
+process index str =
+    if (shouldChange index) then str ++ "!!" else str
+
+transform :: String -> String
+transform = unlines . zipWith process [0.. ] . lines
+
+main = do
+    str <- readFile "myFile.txt"
+    writeFile "outFile.txt" (transform str)
