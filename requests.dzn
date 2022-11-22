@@ -1,4 +1,4 @@
-%%Requests
+%%writing Requests
 array[docs,1..days]  of var int: REQUESTS = array2d(docs,1..days,
 [92,4,5,4,99,99,777,0,0,0,0,0,4,777,0,0,4,99,91,92,777,0,0,4,4,0,0,777,92,4,5,4,99,99,777,0,0,0,0,0,4,777,0,0,4,99,91,92,777,0,0,4,4,0,0,777]
 ); % end of array dump 

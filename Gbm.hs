@@ -2,7 +2,6 @@ module Gbm where
 import Data.List
 
 
-
 mm "0"       = 0                --  0 nuffin
 mm "A"       = 1               --  1 am
 mm "AM"      = 1               --  2 pm 
