@@ -1,32 +1,55 @@
 module Gbm where
 import Data.List
+import Data.Time.Calendar
+import Data.Time
 
 
-mm "0"       = 0                --  0 nuffin
-mm "A"       = 1               --  1 am
-mm "AM"      = 1               --  2 pm 
-mm "a"       = 1
-mm "p"       = 2
-mm "P"       = 2
-mm "OTH"     = 0
-mm "AL"      = 4
-mm "L10"     = 4
-mm "L"       = 4
-mm "CL"      = 5
-mm "CONF"    = 5
-mm "LPPA"    = 6
-mm "UA"      = 91             -- 91 not AM 
-mm "UP"      = 92             -- 92 not PM 
-mm "U"       = 99             -- just plain unavailable all day
-mm "U00:00-23:59" = 99
-mm "(U:_)"   = 99
-mm "777"     = 777
-mm _         = 0
+when p s = if p then s else return ()
+
+countfromone = zip[1..]
+
+data REQUESTS =
+  Zero 
+ | AM
+ | PM 
+ | CL
+ | AL
+ | LPPA
+ | OTH
+ | U
+ | UA
+ | UP
+
+mm "0"        = 0                --  0 nuffin
+mm "A"        = 1               --  1 am
+mm "P"        = 2
+mm "OTH"      = 0
+mm "AL (0.00)"          = 4
+mm "AL (10.00)"         = 4
+mm "AL"       = 4
+mm "CL"       = 5
+mm "CONF (10.00)"      = 5
+mm "LPPA (10.00)"      = 6
+mm "LPPA"              = 6
+mm "UA"       = 91             -- 91 not AM 
+mm "UP"       = 92             -- 92 not PM 
+mm "U"        = 99             -- just plain unavailable all day
+mm "U 00:00-23:59"    = 99
+mm "777"      = 777
+--mm "3"        = 0
+mm "99"       = 99
+mm _           = 0
+
 
 massert  arg result  =  (== result)(mm arg) 
 
 
-leave = ["AL","L","L10","LPPA","CL","CONF"]
+--leave = ["AL","L","L10","LPPA","CL","CONF"]
+annual     = 4
+conference = 5
+lppa       = 6
+leavedzn = [annual,conference,lppa]
+--docs   = {RG,GM,DB,CC,MC,SD,ML,HL,DL,RM,GN,EW,LB,DH,SK,BL,CP,RP,AR,LS,AV,LC,KM,DZ,BB,JD};
 
 data Docs =
       DOCZERO    -- take up the 0 index - dont use
@@ -35,59 +58,104 @@ data Docs =
     | DB --3
     | CC --4
     | MC --5
-    | RM --6 
-    | DL --7
-    | ML --8
-    | DH --9
+    | SD --6 
+    | ML --7
+    | HL --8
+    | DL --9
+    | RM
+    | GN
+    | EW
+    | LB
+    | DH
+    | SK
+    | BL
+    | CP
+    | RP
+    | AR
+    | LS
+    | AV
+    | LC
+    | KM
+    | DZ
+    | BB
+    | JD
     deriving (Enum,Show,Bounded)
 
-docset = [RG,GM,DB,CC,MC,RM,DL,ML]
+docset   = [RG,GM,DB,CC,MC,SD,ML,HL,DL,RM,GN,EW,LB,DH,SK,BL,CP,RP,AR,LS,AV,LC,KM,DZ,BB,JD]
+
+data Days =
+    Sunday    -- == 0 this is very importatn
+  | Monday    -- == 1 
+  | Tuesday   -- == 2 etc
+  | Wednesday
+  | Thursday
+  | Friday
+  | Saturday
+  deriving (Show,Enum)
+
+--arrdd arr doc day = arr!!(((fromEnum doc -1) * 70) + (day-1))
+
+docday doc day = ((fromEnum doc - 1) * ind) + (day -1)
+
+arrdd arr doc day = arr!!(docday doc day)
+
+replaceAtIndex xs i x  = take i xs ++ [x] ++ drop (i+1) xs
+
+--mondays =  [x |x <- [1..70],   x `mod` 7 == fromEnum Monday]
+--tuesdays = [x |x <- [1..70],   x `mod` 7 == fromEnum Tuesday]
+--wednesdays = [x |x <- [1..70], x `mod` 7 == fromEnum Wednesday]
+--thursdays = filter(\x -> x `mod` 7 == fromEnum Thursday) [1..70]
 
 fE x = fromEnum x
 
 days x y = enumFromTo x y    
 
+daycount = 70
+ind = 70
 di xx = 7
 
-doc1 = days  (0 + 1)      (1*(di 3))
-doc2 = days  (1*(di 9)+1) (2*(di 9))
-doc3 = days  (2*(di 9)+1) (3*(di 9))
-doc4 = days  (3*(di 9)+1) (4*(di 9))
-doc5 = days  (4*(di 9)+1) (5*(di 9))
-doc6 = days  (5*(di 9)+1) (6*(di 9))
-doc7 = days  (6*(di 9)+1) (7*(di 9))
-doc8 = days  (7*(di 9)+1) (8*(di 9))
-doc9 = days  (8*(di 9)+1) (9*(di 9))
+doc1 = days  1       (1* ind)
+doc2 = days  (1*ind+1) (2*ind)
+doc3 = days  (2*ind +1) (3*ind)
+doc4 = days  (3*ind+1) (4*ind)
+doc5 = days  (4*ind+1) (5*ind)
+doc6 = days  (5*ind+1) (6*ind)
+doc7 = days  (6*ind+1) (7*ind)
+doc8 = days  (7*ind+1) (8*ind)
+doc9 = days  (8*ind+1) (9*ind)
 
-doc10 = days  (9*(di 9)+1)  (10*(di 9))
-doc11 = days  (10*(di 9)+1) (11*(di 9))
-doc12 = days  (11*(di 9)+1) (12*(di 9))
-doc13 = days  (12*(di 9)+1) (13*(di 9))
-doc14 = days  (13*(di 9)+1) (14*(di 9))
-doc15 = days  (14*(di 9)+1) (15*(di 9))
-doc16 = days  (15*(di 9)+1) (16*(di 9))
-doc17 = days  (16*(di 9)+1) (17*(di 9))
-doc18 = days  (17*(di 9)+1) (18*(di 9))
-doc19 = days  (18*(di 9)+1) (19*(di 9))
-doc20 = days  (19*(di 9)+1) (20*(di 9))
-doc21 = days  (20*(di 9)+1) (21*(di 9))
-doc22 = days  (21*(di 9)+1) (22*(di 9))
-doc23 = days  (22*(di 9)+1) (23*(di 9))
-doc24 = days  (23*(di 9)+1) (24*(di 9))
-doc25 = days  (24*(di 9)+1) (25*(di 9))
-doc26 = days  (25*(di 9)+1) (26*(di 9))
+doc10 = days  (9*ind+1)  (10*ind)
+doc11 = days  (10*ind+1) (11*ind)
+doc12 = days  (11*ind+1) (12*ind)
+doc13 = days  (12*ind+1) (13*ind)
+doc14 = days  (13*ind+1) (14*ind)
+doc15 = days  (14*ind+1) (15*ind)
+doc16 = days  (15*ind+1) (16*ind)
+doc17 = days  (16*ind+1) (17*ind)
+doc18 = days  (17*ind+1) (18*ind)
+doc19 = days  (18*ind+1) (19*ind)
+doc20 = days  (19*ind+1) (20*ind)
+doc21 = days  (20*ind+1) (21*ind)
+doc22 = days  (21*ind+1) (22*ind)
+doc23 = days  (22*ind+1) (23*ind)
+doc24 = days  (23*ind+1) (24*ind)
+doc25 = days  (24*ind+1) (25*ind)
+doc26 = days  (25*ind+1) (26*ind)
 doc100 = days 1000 1000
 
 -- this array is 0 based - i need to start at 1 index
-docs = [[199..199],doc1,doc2,doc3,doc4,doc5,doc6,doc7,doc8]
- --,doc9,doc10,doc11,doc12,doc13,
- --                 doc14,doc15,doc16,doc17,doc18,doc19,doc20,doc21,doc22,doc23,doc24,doc25,doc26]
+docs = [[199..199],doc1,doc2,doc3,doc4,doc5,doc6,doc7,doc8,doc9,doc10,
+                   doc11,doc12,doc13,doc14,doc15,doc16,doc17,doc18,doc19,doc20,
+                   doc21,doc22,doc23,doc24,doc25,doc26]
 
 get_doc arr doc = arr!!(fromEnum doc)
 
---         (show(length [v | (d,v) <- (zip [1..] (gg!!0)), d `elem` (get_doc docs RG) ,v `elem` leave])),
+leave_count arr doc = (show(length [v | (d,v) <- (zip [1..] arr) , 
+                                      d `elem` (get_doc docs doc) ,
+                                      v `elem` leavedzn]))
 
-leave_count arr doc = (show(length [v | (d,v) <- (zip [1..] (arr!!0)), d `elem` (get_doc docs doc) ,v `elem` leave]))
+
+
 
 wordsWhen p s =  case dropWhile p s of
                       "" -> []
@@ -96,13 +164,9 @@ wordsWhen p s =  case dropWhile p s of
 
 splitcomma = wordsWhen (==',')
 
---gm_RCV =  (map splitcomma) . lines
-
-
 gm_RCV fileName = do
     fileText <- readFile fileName
     return  $  ((map splitcomma) . lines)  fileText
-    
 --commonWords2 file1 file2 =
 gm_CSV fileName = do
     fileText <- readFile fileName
@@ -111,13 +175,9 @@ gm_CSV fileName = do
 rcv array index_size row col = array!!0!!((row-1)*index_size+col-1)
 
 
---writeNestedList :: Show a => FileName -> [[a]] -> IO ()
---writeNestedList fileName xss =
---    do
---       fh <- openFile  fileName  WriteMode  -- get a file handle
---       mapM_  ((hPutStrLn fh) . show)  xss
---       hClose fh
-
+yyyy str = take 4 str
+mnth   str = take 2 $ drop 5 str
+dd   str = drop 8 str
 
 new_row c  = [ 0 | _ <- [1..c]]
 
@@ -133,4 +193,3 @@ data Suit =
  | Diamonds
  | Hearts
  deriving (Eq, Show, Enum)
-

@@ -1,7 +1,12 @@
+import Data.Time.Calendar
+--import Data.Time
 import Gbm
-import Data.List
+import Data.List   --intercalate
+import Data.Foldable 
 import Debug.Trace
 import Text.Printf
+
+output x = putStrLn $ intercalate "\n" x
 
 assert False x = error x ++ "assertion failed!"
 assert _     x = x
@@ -9,48 +14,23 @@ assert _     x = x
 blassert False x = error x
 blassert _     x = True
 
-identityCheck name
-  | name == "Walter" = True
-  | name == "Krystal" = True
-  | otherwise = False
-
 main = do
 
-{-
- print $ massert "OTH" 0
- print $ massert "AL10" 4
- print $ massert "U" 99
- print $ (==1) (mmm "s")
- print $ massert "U00:00-23:59" 99
- print $ massert "L" 4
--}
-
-
- gg<- gm_CSV "requests7.txt"
- print $ gg!!0
- let requests = gg!!0
-
- writeFile "data.txt" "quick,OTH,AL10,LSL"
-
- let ll = length [v | (d,v) <- (zip [1..] requests), d `elem` doc1 ,v `elem` leave]
- print $ length [v | (d,v) <- (zip [1..] (gg!!0)), d `elem` doc2, v `elem` leave]
- print $ length [v | (d,v) <- (zip [1..] (gg!!0)), d `elem` doc3, v `elem` leave]
-
- --print $ map mm [v |(d,v)<-  (zip [1..] (gg!!0)), d `elem` [1..21]]
-
+ gg<- gm_CSV "requests70.txt"
+ --print $ gg!!0
+ 
+ let requestsdzn = map mm (gg!!0)
  let dump = "requests.dzn"
- let ggfile = "gg.txt"
+ --let ggfile = "gg.txt"
  let newline = "\n"
  let quotes = ""
- let requestarray = (map mm [v |(d,v)<-  (zip [1..] (gg!!0))] )    
-
+ let requestarray = (map mm [v |(d,v)<-  (countfromone (gg!!0))] )    
+ 
  writeFile dump $  intercalate newline
     ["%%writing Requests",
      quotes ++ "array[docs,1..days]  of var int: REQUESTS = array2d(docs,1..days," ++ quotes,
-     --quotes ++ show(requestarray) ++ quotes,
-     quotes ++ show(map mm [v |(d,v)<-  (zip [1..] requests)])                      ++ quotes,
+     quotes ++ show(requestsdzn)                      ++ quotes,
      "); % end of array dump \n\n"]
-
 
  appendFile dump $ intercalate newline
                 ["constraint forall(doc in docs, day in 1..days)",
@@ -66,27 +46,64 @@ main = do
                  ""++  "  endif);"++ newline ++ newline]
 
  appendFile dump $ intercalate newline
-     [ "constraint count([" ++ show(doc) ++  ",..],l)="  ++ leave_count gg doc ++ ";" |  doc <- docset]
+     [ "constraint count([" ++ show(doc) ++  ",..],l)="  ++ leave_count requestsdzn doc ++ ";" |  doc <- docset]
 
 
-
-
+ --print $ requestsdzn
  print $ show(docset)
  print $ "num of docs is " ++ show(length(docset))
- print $ "num of days is " ++ show(length(map mm [v |(d,v)<-  (zip [1..] (gg!!0))]))
+ print $ "num of days is " ++ show(length(map mm [v |(d,v)<-  (countfromone (gg!!0))]))
  print $ "length of requestarray is--" ++ show(length(requestarray))
 
+ --TESTS 
  print $ foldr (&&) True 
-    [ blassert (mm "O"  == 0) "failed mm '0' ",
-      blassert (mm "L"  == 4) "failed mm 'L' ",
-     mm "AL" == 4,
-     length(docset) == 8,
-     length(requestarray)   == 56,
-     doc1 == [1..7],
-     doc2 == [8..14],
-     doc3 == [15..21],
-     blassert (1==1) "1==1"
+    [ length(docset) == 26,
+      length(requestarray)   == 1820,
+      doc1 == [1..70]
     ]
  -- sequence = foldr (>>) (return())
  sequence_ [print $ 1, print $ 12, print $ (33 + 34)]
  mapM_  print [1,2,3+44]
+-- for_ (filter odd [1..5]) $ \i ->
+--      do
+--        putStr " "
+--        putStr (show i)
+--        putStr "\n"
+ 
+ --print $ flip  filter [1..70] (\x -> x `elem` mondays)
+ --print $ flip  filter [1..70] (\x -> x `mod` 7 == fromEnum Tuesday)
+ --print $ filter (\x -> x `mod` 7 == fromEnum Sunday) [1..70]
+ --print $ [(day,val) |(day,val) <- zip [1..100] requestarray]--,  `mod` 7 == fromEnum Monday]
+ --print $ [v |(day,v) <- zip [1..100] requestarray, day `elem` mondays]
+ 
+ foldlM (\a b -> 
+        putStrLn (show a ++ "+" ++ show b ++
+        "=" ++ show (a+b)) >>
+        return (a+b)) 0 [1..5]
+
+ mapM_ (\l -> when (not $ null l) (putStrLn l))   --this is when :: when p s = if p then s else return ()
+  ["","abc","def","","","ghi"]
+
+ print $ arrdd requestsdzn JD 69
+ print $ arrdd requestsdzn JD 70
+ print $ arrdd requestsdzn JD 1
+ print $ arrdd requestsdzn ML 5
+
+ let datedzn = [(d,s) | (d,s) <- (zip[1..70]  (map showGregorian[fromGregorian 2022 12 26 .. fromGregorian 2023 3 5])) ]
+ let d1 = "26/12/2022"
+
+ writeFile  "dates.dzn" "function string: get_day(days: d) = \n    if d = 1    then \"26/12/2022\"\n"
+ 
+ appendFile "dates.dzn" $  intercalate newline
+        ["    elseif d= "++ show(d) ++ " then \""  ++ (dd s) ++ "/"++ (mnth s) ++ "/" ++ (yyyy s) ++ "\" "
+               | (d,s)<-datedzn ] 
+
+ appendFile "dates.dzn" $
+        "\n else \"nuffin\"\n endif; % end of the big if"
+
+--print $ replaceAtIndex 0 99 requestsdzn
+ --print $ replaceAtIndex  requestsdzn  (docday RG 1) 99 
+ --print $ arrdd requestsdzn ML 5
+ output [ "==============================================\n" ++ 
+          "line" ++ " || " ++show(n)++ " || " ++ "3434" ++ "2323  " ++ show(doc) 
+          |(n,doc) <- zip[1..] docset]
