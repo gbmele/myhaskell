@@ -1,12 +1,12 @@
 import Data.Time.Calendar
 --import Data.Time
-import Gbm
 import Data.List   --intercalate
 import Data.Foldable 
 import Debug.Trace
 import Text.Printf
+import Gbm
+import Control.Monad.State.Lazy
 
-output x = putStrLn $ intercalate "\n" x
 
 assert False x = error x ++ "assertion failed!"
 assert _     x = x
@@ -14,52 +14,53 @@ assert _     x = x
 blassert False x = error x
 blassert _     x = True
 
+requesttxt = "requests70.txt"
+requestdump = "requests.dzn"
+
 main = do
 
- gg<- gm_CSV "requests70.txt"
- --print $ gg!!0
+ gg<- gm_CSV requesttxt
  
  let requestsdzn = map mm (gg!!0)
- let dump = "requests.dzn"
- --let ggfile = "gg.txt"
- let newline = "\n"
- let quotes = ""
- let requestarray = (map mm [v |(d,v)<-  (countfromone (gg!!0))] )    
+ let dump = requestdump
  
  writeFile dump $  intercalate newline
     ["%%writing Requests",
-     quotes ++ "array[docs,1..days]  of var int: REQUESTS = array2d(docs,1..days," ++ quotes,
+     quotes ++ "array[docs,1..DAYS]  of var int: REQUESTS = array2d(docs,1..DAYS," ++ quotes,
      quotes ++ show(requestsdzn)                      ++ quotes,
      "); % end of array dump \n\n"]
 
  appendFile dump $ intercalate newline
-                ["constraint forall(doc in docs, day in 1..days)",
+                ["constraint forall(doc in docs, day in 1..DAYS)",
                  "" ++ "(  if    REQUESTS[ doc, day ] = 4  then roster[ doc, day ]   =  l" ++ "",  -- 4 annual leave
                  ""++  "  elseif REQUESTS[ doc, day ] = 5  then roster[ doc, day ]   =  l" ++ "",  -- 5 conference leave
                  ""++  "  elseif REQUESTS[ doc, day ] = 6  then roster[ doc, day ]   =  l" ++ "",  -- 6 LPPA leave
                  ""++  "  elseif REQUESTS[ doc, day ] = 1  then roster[ doc, day ]   =  a" ++ "",
                  ""++  "  elseif REQUESTS[ doc, day ] = 2  then roster[ doc, day ]   =  p" ++ "",
+                 ""++  "  elseif REQUESTS[ doc, day ] = 3  then (roster[ doc, day ]   =  p \\/ roster[doc,day]= a)" ++ "",
                  ""++  "  elseif REQUESTS[ doc, day ] = 91 then roster[ doc, day ]  !=  a" ++ "",
                  ""++  "  elseif REQUESTS[ doc, day ] = 92 then roster[ doc, day ]  !=  p" ++ "",
+                 ""++  "  elseif REQUESTS[ doc, day ] = 93 then (roster[ doc, day ]   =  p \\/ roster[doc,day]= a)" ++ "",
                  ""++  "  elseif REQUESTS[ doc, day ] = 99 then roster[ doc, day ]   =  o" ++ "",
                  ""++  "  else true" ++"",
                  ""++  "  endif);"++ newline ++ newline]
 
  appendFile dump $ intercalate newline
-     [ "constraint count([" ++ show(doc) ++  ",..],l)="  ++ leave_count requestsdzn doc ++ ";" |  doc <- docset]
+     [ "constraint count(roster[" ++ show(doc) ++  ",..],l)="  ++ leave_count requestsdzn doc ++ ";" |  doc <- docset]
 
 
  --print $ requestsdzn
  print $ show(docset)
  print $ "num of docs is " ++ show(length(docset))
  print $ "num of days is " ++ show(length(map mm [v |(d,v)<-  (countfromone (gg!!0))]))
- print $ "length of requestarray is--" ++ show(length(requestarray))
+ print $ "length of requestarray is--" ++ show(length(requestsdzn))
 
  --TESTS 
  print $ foldr (&&) True 
     [ length(docset) == 26,
-      length(requestarray)   == 1820,
-      doc1 == [1..70]
+      length(requestsdzn)   == 1820,
+      doc1 == [1..70],
+      newline == "\n"
     ]
  -- sequence = foldr (>>) (return())
  sequence_ [print $ 1, print $ 12, print $ (33 + 34)]
@@ -81,7 +82,7 @@ main = do
         "=" ++ show (a+b)) >>
         return (a+b)) 0 [1..5]
 
- mapM_ (\l -> when (not $ null l) (putStrLn l))   --this is when :: when p s = if p then s else return ()
+ mapM_ (\l -> Gbm.when (not $ null l) (putStrLn l))   --this is when :: when p s = if p then s else return ()
   ["","abc","def","","","ghi"]
 
  print $ arrdd requestsdzn JD 69
@@ -89,21 +90,30 @@ main = do
  print $ arrdd requestsdzn JD 1
  print $ arrdd requestsdzn ML 5
 
- let datedzn = [(d,s) | (d,s) <- (zip[1..70]  (map showGregorian[fromGregorian 2022 12 26 .. fromGregorian 2023 3 5])) ]
- let d1 = "26/12/2022"
+ --DATEDZN
+
+ let datedzn = get_dates 26 12 2022 70  --from Gbm.get_dates
 
  writeFile  "dates.dzn" "function string: get_day(days: d) = \n    if d = 1    then \"26/12/2022\"\n"
  
  appendFile "dates.dzn" $  intercalate newline
-        ["    elseif d= "++ show(d) ++ " then \""  ++ (dd s) ++ "/"++ (mnth s) ++ "/" ++ (yyyy s) ++ "\" "
-               | (d,s)<-datedzn ] 
+               ["    elseif d= "++ show(d) ++ " then \""  ++ Gbm.dmystr s ++ "\" "
+                | (d,s)<-datedzn ] 
 
- appendFile "dates.dzn" $
-        "\n else \"nuffin\"\n endif; % end of the big if"
+ appendFile "dates.dzn" $ "\n else \"nuffin\"\n endif; % end of the big if"
 
 --print $ replaceAtIndex 0 99 requestsdzn
  --print $ replaceAtIndex  requestsdzn  (docday RG 1) 99 
  --print $ arrdd requestsdzn ML 5
- output [ "==============================================\n" ++ 
-          "line" ++ " || " ++show(n)++ " || " ++ "3434" ++ "2323  " ++ show(doc) 
+ output [ "================================================\n"     ++ 
+          intercalate  " " ["line ", escquote,vertbar,show n,vertbar,"3434 ","2323 ",show doc]  
           |(n,doc) <- zip[1..] docset]
+ 
+ writeFile "datesarray.mzn"  "array[1..70] of var string: mdates = [\n"
+ appendFile "datesarray.mzn" $ intercalate newline [escquote ++ dmystr d  ++ escquote ++ "," | (v,d) <-datedzn]
+ appendFile "datesarray.mzn" "\n]; % end of mdates array"
+
+ print $ "testing codes"
+ tst <- gm_CSV "testcodes.txt"
+ let tsts = map mm (tst!!0)
+ print $ tsts
