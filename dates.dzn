@@ -1,6 +1,5 @@
 function string: get_day(days: d) = 
     if d = 1    then "26/12/2022"
-    elseif d= 1 then "26/12/2022" 
     elseif d= 2 then "27/12/2022" 
     elseif d= 3 then "28/12/2022" 
     elseif d= 4 then "29/12/2022" 

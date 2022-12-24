@@ -3,10 +3,11 @@ module Gbm where
 import Data.List
 import Data.Time
 import Data.Time.Calendar
+import Control.Monad
+
+add a b = a + b
 
 when p s = if p then s else return ()
-
-countfromone = zip [1 ..]
 
 data REQUESTS
   = Zero
@@ -19,59 +20,65 @@ data REQUESTS
   | U
   | UA
   | UP
+  deriving (Enum,Show)
+annual = 41
+conference = 42
+lppa = 43
+pat  = 44
 
-mm "0" = 0 --  0 nuffin
-mm "A" = 1 --  1 am
-mm "AM" = 1
-mm "MH0900-1800(9.00)" = 1
-mm "MH0800-1730(9.50)" = 1
+leavedzn = [annual, conference, lppa,  pat]
+
+
+
+mm "O"  =0
+mm "0"                  = 0--  0 nuffin
+mm "OTH"                = 0
+mm "A"                  = 1 --  1 am
+mm "AM"                 = 1
+mm "MH0900-1800(9.00)"  = 1
+mm "MH0800-1730(9.50)"  = 1
 mm "MH0800-1800(10.00)" = 1
-mm "P" = 2
+mm "P"                  = 2
 mm "MH1600-2400(8.00)"  = 2
 mm "MH1400-2400(10.00)" = 2
-mm "A 08.00-23.59" = 3   -- avail am or pm
-mm "A08.00-23.59"  = 3   -- avail am or pm
+mm "14:00-23:59"        = 2
+mm "A 08.00-23.59"      = 3   -- avail am or pm
+mm "A08.00-23.59"       = 3   -- avail am or pm
+mm "AP"                 = 3
+mm "AorP"               = 3
+mm "CS"   = 4
 
-mm "OTH" = 0
-mm "AL (0.00)" = 4
-mm "AL (10.00)" = 4
-mm "AL(10.00)" = 4
-mm "AL(0.00)"  = 4
+mm "AL (0.00)" = annual
+mm "AL(0.00)" = annual
+mm "AL (10.00)" = annual
+mm "AL(10.00)" = annual
+mm "AL(0.00)"  = annual
 
-mm "AL" = 4
-mm "CL" = 5
-mm "CONF (10.00)" = 5
-mm "CONF(10.00)"  = 5
-mm "CONF (0.00)"  = 5
-mm "CONF(0.00)"   = 5
-mm "LPPA (10.00)" = 6
-mm "LPPA(10.00)"  = 6
-mm "LPPA" = 6
+mm "AL" = annual
+mm "CL" =  conference
+mm "CONF (10.00)" = conference
+mm "CONF(10.00)"  = conference
+mm "CONF (0.00)"  = conference
+mm "CONF(0.00)"   = conference
+mm "LPPA (10.00)" = lppa
+mm "LPPA(10.00)"  = lppa
+mm "LPPA" = lppa
+
+mm "PAT"  = pat -- paternity leave
+
 mm "UA"              = 91 -- 91 not AM
 mm "UP"              = 92 -- 92 not PM
-
-
 mm "U" = 99 -- just plain unavailable all day
 mm "U 00:00-23:59" = 99
 mm "U00:00-23:59" = 99
 
-mm "777" = 777
---mm "3"        = 0
+mm "77" = 77
 mm "99" = 99
-mm _ = 0
+mm _ = error "no parse"
 
 log x = appendFile "log.txt" x
 
 massert arg result = (== result) (mm arg)
-
---leave = ["AL","L","L10","LPPA","CL","CONF"]
-annual = 4
-
-conference = 5
-
-lppa = 6
-
-leavedzn = [annual, conference, lppa]
 
 --docs   = {RG,GM,DB,CC,MC,SD,ML,HL,DL,RM,GN,EW,LB,DH,SK,BL,CP,RP,AR,LS,AV,LC,KM,DZ,BB,JD};
 
@@ -103,9 +110,12 @@ data Docs
   | DZ
   | BB
   | JD
+  | CK
   deriving (Enum, Show, Bounded)
 
 docset = [RG, GM, DB, CC, MC, SD, ML, HL, DL, RM, GN, EW, LB, DH, SK, BL, CP, RP, AR, LS, AV, LC, KM, DZ, BB, JD]
+
+indexset number index = number `div` index
 
 data Days
   = Sunday -- == 0 this is very importatn
@@ -115,7 +125,11 @@ data Days
   | Thursday
   | Friday
   | Saturday
-  deriving (Show, Enum)
+  deriving (Show, Enum, Eq)
+
+ed = [Gbm.Sunday .. Gbm.Saturday]
+wed = [Gbm.Wednesday]
+
 
 --arrdd arr doc day = arr!!(((fromEnum doc -1) * 70) + (day-1))
 
@@ -123,7 +137,9 @@ docday doc day = ((fromEnum doc - 1) * ind) + (day -1)
 
 arrdd arr doc day = arr !! (docday doc day)
 
-replaceAtIndex xs i x = take i xs ++ [x] ++ drop (i + 1) xs
+
+-- i - 1 to make zero index
+replaceAtIndex xs i x = take (i-1) xs ++ [x] ++ drop i xs
 
 --mondays =  [x |x <- [1..70],   x `mod` 7 == fromEnum Monday]
 --tuesdays = [x |x <- [1..70],   x `mod` 7 == fromEnum Tuesday]
@@ -192,6 +208,8 @@ doc25 = days (24 * ind + 1) (25 * ind)
 
 doc26 = days (25 * ind + 1) (26 * ind)
 
+doc27 = days (26 * ind + 1) (27 * ind)
+
 doc100 = days 1000 1000
 
 -- this array is 0 based - i need to start at 1 index
@@ -222,7 +240,8 @@ docs =
     doc23,
     doc24,
     doc25,
-    doc26
+    doc26,
+    doc27
   ]
 
 get_doc arr doc = arr !! (fromEnum doc)
@@ -235,6 +254,17 @@ leave_count arr doc =
       )
   )
 
+requests arr doc = [ v | (d, v) <- (zip [1 ..] arr), d `elem` (get_doc docs doc)]
+
+
+--rg_ = [(A,(A818,ZZ)),(S,(S818,ZZ)),(I,(I818,ZZ)),(C,(C818,ZZ)),(P,(P1624,C1416))]
+
+--gm_ = [(A,(A818,ZZ)),(S,(S818,ZZ)),(I,(I818,ZZ)),(C,(C818,ZZ)),(P,(P1624,C1416))]
+
+--cc_ = [(A,(A817,C1718)),(S,(S817,C1718)),(I,(I817,C1718)),(C,(ZZ,ZZ)),(P,(P1624,C1416))]
+
+--gn_ = [(ed,A,(A818,ZZ)),(ed,P,(P1624,ZZ)), (wed,P,(P1424,ZZ))  ]
+
 --FILES
 
 wordsWhen p s = case dropWhile p s of
@@ -245,30 +275,45 @@ wordsWhen p s = case dropWhile p s of
 
 splitcomma = wordsWhen (== ',')
 
+
+
 gm_CSV fileName = do
   fileText <- readFile fileName
   return $ ((map splitcomma) . lines) fileText
 
 --FORMATTING
 newline = "\n"
-
+space  = " "
 quotes = ""
 
 escquote = "\""
 
 vertbar = "|"
+padR n s
+    | length s < n  = s ++ replicate (n - length s) ' '
+    | otherwise     = s
+
+
 
 output x = putStrLn $ intercalate "\n" x
 
+output2 x = putStr $ intercalate " " x
+
+output3 x = output2 [intercalate "," x]
+
 --DATES
-yyyy str = take 4 str
+--yyyy str = take 4 str
 
-mnth str = take 2 $ drop 5 str
+--mnth str = take 2 $ drop 5 str
 
-dd str = drop 8 str
+--dd str = drop 8 str
 
 --(dd s) ++ "/"++ (mnth s) ++ "/" ++ (yyyy s)
-dmystr s = (dd s) ++ "/" ++ (mnth s) ++ "/" ++ (yyyy s)
+dmystr s = (dd_ s) ++ "/" ++ (mnth_ s) ++ "/" ++ (yyyy_ s) 
+          where
+               yyyy_  = take 4
+               mnth_  = take 2 . drop 5 
+               dd_    = drop 8
 
 -- provide a list of [(1,"01012022")....]  from get_dates 1 1 2022 70
 get_dates d1 m1 y1 num =
@@ -285,3 +330,74 @@ block r c = [new_row c | _ <- [1 .. r]]
 print_block x = mapM_ print x -- why does this work
 
 get_column g c = [row !! c | row <- g]
+
+--data Debuggable = Debuggable (Int, [[Char]]) deriving (Show)
+--ret x = Debuggable (x, [])
+
+--bind :: Debuggable -> (Int -> Debuggable) -> Debuggable
+
+--bind (Debuggable (a , b)) f   = Debuggable (y, z ++ b) 
+--                              where Debuggable (y , z) = f(a)
+
+
+
+--inc x = Debuggable (x+1, ["Number increased by one"])
+
+data Debuggable a = Debuggable (a, [[Char]]) deriving (Show)
+-- needed since newer versions of GHC
+instance Functor Debuggable where
+  fmap = liftM
+
+instance Applicative Debuggable where
+  pure  = return
+  (<*>) = ap
+------------------------
+
+instance Monad Debuggable where 
+  return x = Debuggable (x, [])
+  (>>=) (Debuggable (a,b)) f = Debuggable (y, b ++ z) where Debuggable (y,z) = f(a)
+
+inc :: Int -> Debuggable Int
+inc x = Debuggable (x+1, ["Number increased by one"])
+dec x = Debuggable (x-1, ["Decreased by one"])
+
+
+data Unit a = Unit a deriving (Show)
+
+instance Functor Unit where
+  fmap = liftM
+
+instance Applicative Unit where
+  pure  = return
+  (<*>) = ap
+
+instance Monad Unit where 
+  return x = Unit x
+  (>>=) (Unit x) f = f x
+
+k x = [x,x,x]
+
+name = getName >>= welcome
+  where
+    ask :: String -> IO String
+    ask s = putStr s >> getLine
+
+    join :: [String] -> String
+    join  = concat . intersperse " "
+
+    getName :: IO String
+    getName  = join <$> traverse ask ["What is your first name? ",
+                                      "And your last name? "]
+
+    welcome :: String -> IO ()
+    welcome full = putStrLn ("Pleased to meet you, "++full++"!")
+
+data Myerror = 
+  NotaShift Char
+   deriving (Show, Eq)
+
+myFunc x = 
+     case x of
+       '1' -> Right AM
+       '2' -> Right PM
+       _   -> Left (NotaShift x)

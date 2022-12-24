@@ -45,4 +45,137 @@ or = foldr (||) False
 
  print $ foldr (\x y -> x + y) 0  [1,2,3,4] 
  print $ foldr (\x ys -> 1 + ys) 0  [1,2,3,4] 
+==================================================
+liST APPLICATIVE
+instance Applicative [] where
+  -- pure :: a -> [a]
+  pure x = [x]
 
+  -- (<*>) :: Maybe [a -> b] -> [a] -> [b]
+  fs <*> xs = [f x | f <- fs, x <- xs]
+
+main :: IO ()
+main = do
+  -- Testing Applicative List []
+  let pure_list = pure :: a -> [a]
+  print $ pure_list 1 -- [1]
+  print $ pure_list "Andy" -- ["Andy"]
+  print $ pure_list (Just 1) -- [Just 1]
+  print $ pure_list (+1) <*> [1,2,3] -- [2,3,4]
+  print $ [(+1), (*10)] <*> [1,2,3] -- [2,3,4,10,20,30]
+
+
+
+
+
+
+pure takes a value of any type and transforms it into a value whose type is an Applicative. The Applicative type is a container holding the original value. For example, when making Maybe an instance of Applicative, pure is defined as pure x = Just x. In this context pure wraps any value inside a Just container value.
+
+(<*>) (pronounced "ap" or "apply"3) is a generalized function application where the function and arguments are functors. Function application is simply applying a function to an argument, so (<*>) applies the function f (a -> b) to the argument f a.
+
+With these two building blocks, applicative functors are created which allow a function of variable argument length to be mapped over the values in a type. The following code defines the Maybe type as an instance of Applicative.
+
+instance Applicative Maybe where
+  -- pure :: a -> Maybe a
+  pure x = Just x
+
+  -- (<*>) :: Maybe (a -> b) -> Maybe a -> Maybe b
+  Nothing <*> _ = Nothing
+  (Just g) <*> mx = fmap g mx
+pure wraps a value in the Just constructor function. Just is a constructor function for the Maybe type, which is an instance of Applicative and Functor. Just represents success in the Maybe type while Nothing represents failure.
+
+<*> (apply) maps a Maybe value to a Maybe function. If the function is equal to Nothing, the apply function propagates the failure by returning Nothing. If the function is wrapped inside Just, fmap is called with the function and value as arguments. Here are some basic examples that utilize the pure and (<*>) functions with the Maybe type.
+
+
+-- Testing the pure function defined in the Applicative type class
+print $ (pure :: a -> Maybe a) 1 -- Just 1
+print $ (pure :: a -> Maybe a) (Just 1 :: Maybe Int) -- Just (Just 1)
+
+let pure_maybe = pure :: a -> Maybe a
+print $ pure_maybe 1 -- Just 1
+print $ pure_maybe 12.31 -- Just 12.31
+print $ pure_maybe (Just 2) -- Just (Just 2)
+
+-- Testing pure combined with <*> for a Functor with a single argument
+print $ pure (+1) <*> Just 1 -- Just 2
+print $ pure (*3) <*> Just 2 -- Just 6
+print $ pure (+1) <*> Nothing -- Nothing
+
+-- Testing pure combined with <*> for a Functor with two arguments
+print $ pure (+) <*> Just 1 <*> Just 3 -- Just 4
+print $ pure (+) <*> Nothing <*> Just 3 -- Nothing
+print $ pure (+) <*> Just 3 <*> Nothing -- Nothing
+Another cool implementation of the Applicative type class involves lists.
+
+instance Applicative [] where
+  -- pure :: a -> [a]
+  pure x = [x]
+
+  -- (<*>) :: Maybe [a -> b] -> [a] -> [b]
+  fs <*> xs = [f x | f <- fs, x <- xs]
+
+main :: IO ()
+main = do
+  -- Testing Applicative List []
+  let pure_list = pure :: a -> [a]
+  print $ pure_list 1 -- [1]
+  print $ pure_list "Andy" -- ["Andy"]
+  print $ pure_list (Just 1) -- [Just 1]
+  print $ pure_list (+1) <*> [1,2,3] -- [2,3,4]
+  print $ [(+1), (*10)] <*> [1,2,3] -- [2,3,4,10,20,30]
+Why is the Applicative Type Class Needed?
+Applicatives are an enhancement on top of functors. While fmap functions can perform the same tasks as applicatives, their implementation is cumbersome and doesn't scale4.
+
+The two functions defined in the Applicative type class can be used to create fmap functions with any number of arguments. For example, I created the following functor type classes where fmap maps a function with zero, one, and two arguments to every value in a type:
+
+
+-- Type class for a functor with zero arguments.  Simply wraps a value in a type that is an instance of Functor.
+class Functor0 f where
+  fmap0 :: a -> f a
+
+-- Type class for a functor with a single argument.  This is equivalent to the normal fmap function and Functor type.
+class Functor1 f where
+  fmap1 :: (a -> b) -> f a -> f b
+
+-- Type class for a functor with two arguments.
+class Functor2 f where
+  fmap2 :: (a -> b -> c) -> f a -> f b -> f c
+I made the Maybe type an instance of Functor0, Functor1, and Functor2 using pure and (<*>).
+
+
+-- Make Maybe an instance of a functor that maps a function with zero arguments.
+instance Functor0 Maybe where
+  -- fmap0 :: a -> f a
+  -- fmap0 x = Just x
+  fmap0 x = pure x
+
+-- Make Maybe an instance of a functor that maps a function with one argument.
+instance Functor1 Maybe where
+  -- fmap1 :: (a -> b) -> f a -> f b
+  -- fmap1 f x = fmap f x
+  fmap1 f x = pure f <*> x
+
+-- Make Maybe an instance of a functor that maps a function with two arguments.
+instance Functor2 Maybe where
+  -- fmap2 :: (a -> b -> c) -> f a -> f b -> f c
+  fmap2 f x y = pure f <*> x <*> y
+fmap0 is functionally equivalent to pure, wrapping a value in a functor type. fmap1 is equivalent to the fmap function in the Functor type class. fmap2 takes two values and applies them to a function which takes two arguments. The functionality of these three functions can be seen in the following examples:
+
+print $ (fmap0 :: a -> Maybe a) 1 -- Just 1
+print $ fmap1 (+1) (Just 1) -- Just 2
+print $ fmap1 (+1) Nothing -- Nothing
+print $ fmap2 (+) (Just 2) (Just 2) -- Just 4
+print $ fmap2 (+) Nothing (Just 2) -- Nothing
+print $ fmap2 (+) (Just 2) Nothing -- Nothing
+Instead of defining functor type classes for every number of arguments, we can simply chain any number of (<*>) functions as seen in fmap2. For this reason, the Applicative type class is used instead of different versions of the fmap function.
+
+Applicatives in Java
+Unlike Functors, Applicatives can't be expressed in Java5. This is because Java types lack Higher-Kinded polymorphism while Haskell types have Higher-Kinded polymorphism. In Haskell terms, Higher-Kinded types apply to type constructors6.
+
+Kind
+
+A Kind is the type of a type constructor7. Haskell is a language whose type system is made up of kinds. The most basic kind is denoted as *. This basic kind is called “type”8. A more complex kind that represents a type constructor with a single argument is represented as * -> *. For example, data Maybe a = Nothing | Just a is a single argument type constructor.
+
+Higher-Kinded Types
+
+A Higher-Kinded Type is a type that takes another type as an argument and constructs a new type9. In the same way a higher-order function takes functions as arguments and returns a function, higher-kinded types take type constru
