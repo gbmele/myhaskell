@@ -1,0 +1,51 @@
+module ZebraPuzzle (Resident(..), Solution(..), solve) where
+import Control.Monad (guard, mplus)
+import Data.List     (elemIndex, permutations, zip5)
+data Resident  = Englishman | Spaniard | Ukrainian | Norwegian | Japanese
+  deriving (Eq, Show, Bounded, Enum)
+data Color     = Red | Green | Ivory | Yellow | Blue
+  deriving (Eq, Show, Bounded, Enum)
+data Beverage  = Coffee | Tea | Milk | Orange | Water
+  deriving (Eq, Show, Bounded, Enum)
+data Cigarette = OldGold | Kools | Chester | LuckyStrike | Parliaments
+  deriving (Eq, Show, Bounded, Enum)
+data Pet       = Dog | Snail | Fox | Horse | Zebra
+  deriving (Eq, Show, Bounded, Enum)
+data Solution = Solution { waterDrinker :: Resident
+                         , zebraOwner :: Resident
+                         } deriving (Eq, Show)
+solve :: Solution
+solve = do
+  let xs = steps
+  let (wd,_,_,_,_) = head $ filter (\(_,_,drink,_,_) -> drink == Water) xs
+  let (zo,_,_,_,_) = head $ filter (\(_,_,_,_,pet)   -> pet   == Zebra) xs
+  Solution wd zo
+steps :: [(Resident, Color, Beverage, Cigarette, Pet)]
+steps = do
+  resident <- allPatterns
+  equal resident  Norwegian   0                  -- No.10
+  color <- allPatterns
+  equal color     Blue        1                  -- No.15
+  also  resident  Englishman  color    Red       -- No.02
+  right color     Ivory       color    Green     -- No.06
+  beverage <- allPatterns
+  equal beverage  Milk        2                  -- No.09
+  also  beverage  Coffee      color    Green     -- No.04
+  also  beverage  Tea         resident Ukrainian -- No.05
+  cigarette <- allPatterns
+  also  cigarette Kools       color    Yellow    -- No.08
+  also  cigarette LuckyStrike beverage Orange    -- No.13
+  also  cigarette Parliaments resident Japanese  -- No.14
+  pet <- allPatterns
+  also  resident  Spaniard    pet      Dog       -- No.03
+  also  cigarette OldGold     pet      Snail     -- No.07
+  next  cigarette Chester     pet      Fox       -- No.11
+  next  cigarette Kools       pet      Horse     -- No.12
+  zip5 resident color beverage cigarette pet
+  where
+    equal xs x n    = guard $ xs !! n == x
+    also  xs x ys y = guard $ elemIndex x xs == elemIndex y ys
+    right xs x ys y = guard $ elemIndex x xs == fmap (+1) (elemIndex y ys)
+    next  xs x ys y = right xs x ys y `mplus` right ys y xs x
+allPatterns :: (Bounded a, Enum a) => [[a]]
+allPatterns = permutations [minBound..maxBound]
