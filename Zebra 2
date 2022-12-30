@@ -1,0 +1,126 @@
+odule ZebraPuzzle (Resident(..), Solution(..), solve) where
+import Control.Applicative
+import Debug.Trace
+import Data.List
+import Control.Monad
+data Resident = Norwegian | Englishman | Spaniard | Ukrainian | Japanese
+  deriving (Enum, Eq, Show)
+data Color = Blue | Red | Green | Ivory | Yellow
+  deriving (Enum, Eq, Show)
+data Pet = Dog | Snails | Fox | Horse | Zebra
+  deriving (Enum, Eq, Show)
+data Beverage = Coffee | Tea | Milk | OrangeJuice | Water
+  deriving (Enum, Eq, Show)
+data Smoke = OldGold | Kool | Chesterfield | LuckyStrike | Parliament
+  deriving (Enum, Eq, Show)
+data House = House
+  { resident :: Resident
+  , color :: Color
+  , pet :: Pet
+  , beverage :: Beverage
+  , smoke :: Smoke
+  } deriving (Eq, Show)
+rule2 Englishman Red = True
+rule2 Englishman _ = False
+rule2 _ Red = False
+rule2 _ _ = True
+rule3 Spaniard Dog = True
+rule3 Spaniard _ = False
+rule3 _ Dog = False
+rule3 _ _ = True
+rule4 Green Coffee = True
+rule4 Green _ = False
+rule4 _ Coffee = False
+rule4 _ _ = True
+rule5 Ukrainian Tea = True
+rule5 Ukrainian _ = False
+rule5 _ Tea = False
+rule5 _ _ = True
+rule7 Snails OldGold = True
+rule7 Snails _ = False
+rule7 _ OldGold = False
+rule7 _ _ = True
+rule8 Yellow Kool = True
+rule8 Yellow _ = False
+rule8 _ Kool = False
+rule8 _ _ = True
+rule13 OrangeJuice LuckyStrike = True
+rule13 OrangeJuice _ = False
+rule13 _ LuckyStrike = False
+rule13 _ _ = True
+rule14 Japanese Parliament = True
+rule14 Japanese _ = False
+rule14 _ Parliament = False
+rule14 _ _ = True
+allPossibleHouses = do
+  resident <- [Norwegian .. Japanese]
+  color <- [Blue .. Yellow]
+  pet <- [Dog .. Zebra]
+  beverage <- [Coffee .. Water]
+  smoke <- [OldGold .. Parliament]
+  guard $ rule2 resident color
+  guard $ rule3 resident pet
+  guard $ rule4 color beverage
+  guard $ rule5 resident beverage
+  guard $ rule7 pet smoke
+  guard $ rule8 color smoke
+  guard $ rule13 beverage smoke
+  guard $ rule14 resident smoke
+  return $ House resident color pet beverage smoke
+rule6 (House _ Ivory _ _ _, House _ Green _ _ _) = True
+rule6 _ = False
+rule9 (House _ _ _ Milk _) = True
+rule9 _ = False
+rule10 (House Norwegian _ _ _ _) = True
+rule10 _ = False
+rule11 (House _ _ _ _ Chesterfield, House _ _ Fox _ _) = True
+rule11 (House _ _ Fox _ _, House _ _ _ _ Chesterfield) = True
+rule11 _ = False
+rule12 (House _ _ _ _ Kool, House _ _ Horse _ _) = True
+rule12 (House _ _ Horse _ _, House _ _ _ _ Kool) = True
+rule12 _ = False
+rule15 (House _ Blue _ _ _) = True
+rule15 _ = False
+allPossibleRowes = do
+  house1 <- allPossibleHouses
+  guard $ rule10 house1
+  house2 <- allPossibleHouses
+  guard $ resident house2 /= resident house1
+  guard $ color house2 /= color house1
+  guard $ pet house2 /= pet house1
+  guard $ beverage house2 /= beverage house1
+  guard $ smoke house2 /= smoke house1
+  guard $ rule15 house2
+  house3 <- allPossibleHouses
+  guard $ resident house3 `notElem` map resident [house1, house2]
+  guard $ color house3 `notElem` map color [house1, house2]
+  guard $ pet house3 `notElem` map pet [house1, house2]
+  guard $ beverage house3 `notElem` map beverage [house1, house2]
+  guard $ smoke house3 `notElem` map smoke [house1, house2]
+  guard $ rule9 house3
+  house4 <- allPossibleHouses
+  guard $ resident house4 `notElem` map resident [house1, house2, house3]
+  guard $ color house4 `notElem` map color [house1, house2, house3]
+  guard $ pet house4 `notElem` map pet [house1, house2, house3]
+  guard $ beverage house4 `notElem` map beverage [house1, house2, house3]
+  guard $ smoke house4 `notElem` map smoke [house1, house2, house3]
+  house5 <- allPossibleHouses
+  guard $ resident house5 `notElem` map resident [house1, house2, house3, house4]
+  guard $ color house5 `notElem` map color [house1, house2, house3, house4]
+  guard $ pet house5 `notElem` map pet [house1, house2, house3, house4]
+  guard $ beverage house5 `notElem` map beverage [house1, house2, house3, house4]
+  guard $ smoke house5 `notElem` map smoke [house1, house2, house3, house4]
+  let h2s = [(house1, house2), (house2, house3), (house3, house4), (house4, house5)]
+  guard $ any rule6 h2s
+  guard $ any rule11 h2s
+  guard $ any rule12 h2s
+  return [house1, house2, house3, house4, house5]
+data Solution = Solution { waterDrinker :: Resident
+                         , zebraOwner :: Resident
+                         } deriving (Eq, Show)
+solve :: Solution
+solve =
+  let hs = head allPossibleRowes
+      waterDrinkerHouse = head $ filter (\ h -> Water == beverage h) hs
+      zebraOwnerHouse = head $ filter (\ h -> Zebra == pet h) hs
+  in Solution (resident waterDrinkerHouse) (resident zebraOwnerHouse)
