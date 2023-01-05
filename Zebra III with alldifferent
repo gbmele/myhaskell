@@ -1,0 +1,122 @@
+module ZebraPuzzle (Resident(..), Solution(..), solve) where
+import Control.Monad (guard)
+import Data.List (find, sort)
+import Data.Maybe (fromJust)
+data Position  = First | Second | Middle | Fourth | Last
+  deriving (Eq, Show, Enum, Ord)
+data Resident  = Englishman | Spaniard | Ukrainian | Norwegian | Japanese
+  deriving (Eq, Show, Enum, Ord)
+data Color     = Red | Green | Ivory | Yellow | Blue
+  deriving (Eq, Show, Enum, Ord)
+data Pet       = Dog | Snails | Fox | Horse | Zebra
+  deriving (Eq, Show, Enum, Ord)
+data Drink     = Coffee | Tea | Milk | OrangeJuice | Water
+  deriving (Eq, Show, Enum, Ord)
+data Cigarette = OldGold | Kools | Chesterfields | LuckyStrike | Parliaments
+  deriving (Eq, Show, Enum, Ord)
+data House = House { position  :: Position
+                   , resident  :: Resident
+                   , color     :: Color
+                   , pet       :: Pet
+                   , drink     :: Drink
+                   , cigarette :: Cigarette
+                   } deriving (Show)
+type PositionAssignment = [House]
+data Solution = Solution { waterDrinker :: Resident
+                         , zebraOwner :: Resident
+                         } deriving (Eq, Show)
+-- The problem specifies ten 'absolute' constraints which every house must
+-- satisfy, which can be tested individually. There are also four 'relative'
+-- constraints which can only be tested on a full assignment of houses to
+-- the five positions.
+-- | Tests whether a house satisfies the absolute constraints
+satisfiesAbsoluteConstraints :: House -> Bool
+satisfiesAbsoluteConstraints (House position' resident' color' pet' drink' cigarette') =
+  all (uncurry iff) absoluteConstraints
+  where absoluteConstraints =
+          [ (resident'  == Englishman,  color'     == Red)
+          , (resident'  == Spaniard,    pet'       == Dog)
+          , (drink'     == Coffee,      color'     == Green)
+          , (resident'  == Ukrainian,   drink'     == Tea)
+          , (cigarette' == OldGold,     pet'       == Snails)
+          , (cigarette' == Kools,       color'     == Yellow)
+          , (drink'     == Milk,        position'  == Middle)
+          , (resident'  == Norwegian,   position'  == First)
+          , (cigarette' == LuckyStrike, drink'     == OrangeJuice)
+          , (resident'  == Japanese,    cigarette' == Parliaments) ]
+        iff :: Bool -> Bool -> Bool
+        iff True  True  = True
+        iff False False = True
+        iff _ _         = False
+-- | Tests whether a position assignment satisfies the relative constraints.
+-- | This function assumes that the position assignment contains houses with
+-- | the required attributes, the caller should ensure this holds.
+satisfiesRelativeConstraints :: PositionAssignment -> Bool
+satisfiesRelativeConstraints houses = and relativeConstraints
+  where
+    relativeConstraints =
+      [ houseWith color     Green         `toTheRight` houseWith color Ivory
+      , houseWith cigarette Chesterfields `nextTo`     houseWith pet   Fox
+      , houseWith cigarette Kools         `nextTo`     houseWith pet   Horse
+      , houseWith resident  Norwegian     `nextTo`     houseWith color Blue ]
+    houseWith  :: Eq a => (House -> a) -> a -> House
+    houseWith attribute value = fromJust $ find ((value ==) . attribute) houses
+    toTheRight :: House -> House -> Bool
+    toTheRight h1 h2 = fromEnum (position h1) == fromEnum (position h2) + 1
+    nextTo     :: House -> House -> Bool
+    nextTo     h1 h2 = h1 `toTheRight` h2 || h2 `toTheRight` h1
+-- | Constructs a list of every house satisfying the absolute constraints
+validHouses :: [House]
+validHouses = do
+  position'  <- [First .. Last]
+  resident'  <- [Englishman .. Japanese]
+  color'     <- [Red .. Blue]
+  pet'       <- [Dog .. Zebra]
+  drink'     <- [Coffee .. Water]
+  cigarette' <- [OldGold .. Parliaments]
+  let house = House position' resident' color' pet' drink' cigarette'
+  guard $ satisfiesAbsoluteConstraints house
+  return house
+-- Some helper functions for determining that a list of houses (a partial
+-- assignment) contains houses with unique attributes.
+-- | Test whether the list contains pairwise distinct elements.
+-- | Requires 'Ord a' because the efficient O(n*log n) solution involves sort.
+allDifferent :: Ord a => [a] -> Bool
+allDifferent = comparePairwise . sort
+  where comparePairwise xs = and $ zipWith (/=) xs (drop 1 xs)
+-- | Test whether the list of houses contains pairwise distinct attributes.
+-- | The implementation of this function is rather unsatisfactory, there
+-- | should be some generic way of traversing the records in 'House'.
+uniqueAttributes :: [House] -> Bool
+uniqueAttributes houses = and [ allDifferent $ map position  houses
+                              , allDifferent $ map resident  houses
+                              , allDifferent $ map color     houses
+                              , allDifferent $ map pet       houses
+                              , allDifferent $ map drink     houses
+                              , allDifferent $ map cigarette houses ]
+-- | Construct every valid position assignment (there should only be one!) with
+-- | a fold by filling the positions one-by-one. Given a partial assignment
+-- | (which starts out empty), add the next valid house with the next available
+-- | position and check that doing so doesn't introduce any repeated attributes.
+-- | Once all five positions have been filled, check the
+validPositionAssignments :: [PositionAssignment]
+validPositionAssignments = do
+  houses <- foldr go [[]] [First .. Last]
+  guard $ satisfiesRelativeConstraints houses
+  return houses
+  where housesAtPosition p = filter ((p ==) . position) validHouses
+        go :: Position -> [PositionAssignment] -> [PositionAssignment]
+        go position' partialAssignments = do
+          nextHouse  <- housesAtPosition position'
+          assignment <- partialAssignments
+          let nextAssignment = nextHouse:assignment
+          guard $ uniqueAttributes nextAssignment
+          return nextAssignment
+-- To find the solution, answer the questions given the first (and only) valid
+-- position assignment
+solve :: Solution
+solve = Solution waterDrinker' zebraOwner'
+  where houses = head validPositionAssignments
+        waterDrinker' = resident . fromJust $ find ((Water ==) . drink) houses
+        zebraOwner'   = resident . fromJust $ find ((Zebra ==) . pet)   houses
+        -- again, some generic treatment of the records in 'House' would be nice
