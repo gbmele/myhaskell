@@ -1,6 +1,8 @@
 module Gbm where
 
 import Data.List
+import Data.List (sort, subsequences)
+
 import Data.Time
 import Data.Time.Calendar
 import Control.Monad
@@ -8,19 +10,6 @@ import Control.Monad
 add a b = a + b
 
 when p s = if p then s else return ()
-
-data REQUESTS
-  = Zero
-  | AM
-  | PM
-  | CL
-  | AL
-  | LPPA
-  | OTH
-  | U
-  | UA
-  | UP
-  deriving (Enum,Show)
 annual = 41
 conference = 42
 lppa = 43
@@ -117,7 +106,7 @@ docset = [RG, GM, DB, CC, MC, SD, ML, HL, DL, RM, GN, EW, LB, DH, SK, BL, CP, RP
 
 indexset number index = number `div` index
 
-data Days
+data DDays
   = Sunday -- == 0 this is very importatn
   | Monday -- == 1
   | Tuesday -- == 2 etc
@@ -126,9 +115,6 @@ data Days
   | Friday
   | Saturday
   deriving (Show, Enum, Eq)
-
-ed = [Gbm.Sunday .. Gbm.Saturday]
-wed = [Gbm.Wednesday]
 
 
 --arrdd arr doc day = arr!!(((fromEnum doc -1) * 70) + (day-1))
@@ -149,6 +135,11 @@ replaceAtIndex xs i x = take (i-1) xs ++ [x] ++ drop i xs
 fE x = fromEnum x
 
 days x y = enumFromTo x y
+-- print $ enumFromTo  ((s-1) * ind + 1) (s * ind) 
+--   where   s   = 2
+--           ind = 70
+
+getindexset staff ind = enumFromTo ((staff  -1 )* ind + 1) (staff * ind)
 
 daycount = 70
 
@@ -156,7 +147,7 @@ ind = 70
 
 di xx = 7
 
-doc1 = days 1 (1 * ind)
+doc1 = days (0 * ind + 1) (1 * ind)
 
 doc2 = days (1 * ind + 1) (2 * ind)
 
@@ -401,3 +392,53 @@ myFunc x =
        '1' -> Right AM
        '2' -> Right PM
        _   -> Left (NotaShift x)
+
+comb n m = sort . filter ((==m) . length) $ subsequences [1..n]
+
+
+
+--(.&&.) f g a = (f a) && (g a)
+(.||.) f g a = (f a) || (g a)
+data Shifts
+ = OFF
+ | AM
+ | PM
+   deriving (Show,Enum,Eq )
+data Days
+ = ZeroDay
+ | Mon
+ | Tue
+ | Wed
+ | Thu
+ | Fri
+ | Sat
+ | Sun
+  deriving (Show,Enum,Eq)
+
+day x y = if x `mod` 7 == (fromEnum y) then True else False
+
+monday x = x `mod` 7 == (fromEnum Mon) 
+tuesday x = x `mod` 7 == (fromEnum Tue)
+data Week
+ = Week 
+  { mon :: Shifts,
+    tue :: Shifts, 
+    wed :: Shifts,
+    thu :: Shifts,
+    fri :: Shifts,
+    sat ::  Shifts,
+    sun :: Shifts } 
+   deriving (Show)
+
+rule1pm (Week PM _ _ _ _ _ _)  = True
+rule1pm (Week _ PM _ _ _ _ _)  = True
+
+rule1pm _                = False
+
+cnt shft wk = length $ filter (==True)[(mon wk == shft),tue wk == shft,wed wk == shft,thu wk == shft,fri wk == shft, sat wk == shft, sun wk == shft]
+
+count_day day shift wk = length $ filter (==True)[day wk == shift]
+
+count_days day shift wk_list = sum $ map (count_day day shift) wk_list
+
+count shift wk_list = sum $ map (cnt shift) wk_list

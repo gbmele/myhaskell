@@ -1,3 +1,13 @@
+ g <*> x <*> y <*> z
+means
+((g <*> x) <*> y) <*> z
+applicative laws
+In addition to providing the functions pure and <*>, applicative functors are also required to satisfy four
+equational laws:
+
+
+
+
 just do haskell wholemeal coding from now on
 
 wordsWhen p s =  case dropWhile p s of

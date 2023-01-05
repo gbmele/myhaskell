@@ -8,13 +8,16 @@ import Text.Printf
 import Gbm
 import Control.Monad.State.Lazy
 import Data.Char (isSpace)
+import Data.List
 import Control.Applicative (liftA2)
+import Zebra
 
 x >$> f = f x  -- = f $ x as well
 
 f >.> g = g . f
 f |>  g = g . f
 
+addone x = x + 1
 
 fmt 0 = "  "
 fmt x = printf "%02d" x
@@ -108,9 +111,9 @@ main = do
 
  --DATEDZN
 
- let datedzn = get_dates 26 12 2022 70  --from Gbm.get_dates
- let start_date = "26/12/2022"
- writeFile  "dates.dzn" "function string: get_day(days: d) = \n    if d = 1    then \"26/12/2022\"\n"
+ let datedzn = get_dates 8 5 2023 (13*7)  --from Gbm.get_dates
+ let start_date = "08/05/2023"
+ writeFile  "dates.dzn" "function string: get_day(days: d) = \n    if d = 1    then \"08/05/2023\"\n"
  
  appendFile "dates.dzn" $  intercalate newline
                ["    elseif d= "++ show(d) ++ " then \""  ++ Gbm.dmystr s ++ "\" "
@@ -207,7 +210,6 @@ main = do
 
  --print $ bind( bind (ret 4) inc) inc
 
- print $ Debuggable(15,[]) >>= inc >>= inc >>= return
  
 
  print $ fmap (+1) [1,2,3]
@@ -260,3 +262,103 @@ main = do
 --       in xx 1
  print $ [1,2,3] >>= k
  print $ Left "boom" >>= \x -> return (x+1)  
+
+-- print $ apply(pure(add1))([1,2,3])
+ print $  (\x  -> x + 1) <$>  [1,2,3]
+ print $  (pure (\x  -> x + 1)) <*>  [1,2,3]
+ print $ "wow it jap is bind"
+ print $   join(ap (pure (\x  -> [x + 1]))   [1,2,3])
+ print $   fmap  (\x  -> x + 1)   [1,2,3]
+ print $    map  (\x  -> x + 1)   [1,2,3]
+ let ifte x y z = if x then y else z
+
+ print $ ifte (1==1) "yes" "no"
+ print  $ pure(\x -> x + 1)("Ignore this?")(1) -- pure is the K konstant constant from SKI calculus!!!! WTF
+
+ print $ pure ((\x -> x + 1) . (\y -> y + 1)) <*> [1,2,3]
+ print $ (pure((\x -> x + 1) . (\y -> y + 1))) `ap` [1,2,3]
+
+-- print $  [addone . (\y -> y +11)] <*> [1,2,3] where addone = (1+)
+
+ print $ map ((\x -> x + 1) |> (\y -> 2 * y)) [10,12]
+
+ --mapM_ ((1+) |> (2*) |> (\x -> dumpme (show(x) ++ "\n")))  [1,2]  where dumpme = appendFile "ggggg.txt"
+
+--doc1 = days (0 * ind + 1) (1 * ind)
+ let num = 15
+ let idx = 5
+ print $ [x | (i,x)<- zip [1..] [1..50]  ]
+
+ let xxx =  [1,32,4] >>= (\x -> return (addone x)) >>= (\xx -> return (xx + 3)) in print $ xxx
+
+ print $ join $ Just (Just 4)
+ print $ Debuggable(15,[]) >>= inc >>= inc >>= return
+ 
+ let x = head $ permutations [1..5]
+ print $ x
+ print $ solve_zebra
+
+ let x = do
+          d1 <- [ (x,y) |  x <-[1..7], y <- [0..2]]
+          --guard $ d1 
+          return $ d1 
+ print $ x
+
+
+ print $ length(comb 14 8)
+
+ let wk1 = Week PM AM AM PM OFF OFF OFF
+ let wk2 = Week OFF PM AM AM OFF AM AM
+ let wk3 = Week AM  PM OFF AM AM AM AM
+
+ let wks = [wk1,wk2]
+ let rr = permutations [wk1,wk2]
+ print $ wk1
+ print $ rule1pm wk1
+ print $ rule1pm wk2
+
+ print $ count AM wks
+ print $ count_days sun PM wks
+-- print $  (permutations [wk1,wk2,wk3])!!0
+
+ --filter (liftM2 (&&) odd (> 100)) [1..200]
+ print $ filter (liftM2 (||) (==PM)(==AM) )      $ ( [mon,tue,wed] <*>) wks
+ 
+ -- this is probably the easiest
+ print $ filter(\x -> x==PM || x == AM || x ==OFF) $ ( [mon,tue,wed] <*>) wks
+
+ print $ filter(or <$> sequence [(==PM),(==AM), (==OFF)]) $ ( [mon,tue,wed] <*>) wks
+
+--same
+--but beloe no good -- have to nest the .||. 
+ print $ filter ((==PM) .||. ((==AM) .||. (==OFF)))  $ ( [mon,tue,wed] <*>) wks
+
+--(.&&.) f g a = (f a) && (g a)
+--(.||.) f g a = (f a) || (g a)
+
+
+ 
+ print $ filter(==PM) $ ( [mon,tue,wed] <*>) wks
+ print $  length . filter(==PM) $ ( ap [mon,tue,wed]) wks
+ print $ "mm"
+ forM_ (permutations [wk1,wk2]) $ \x -> do
+    print $  length . filter(==PM) $ ( ap [mon,tue,wed]) x
+
+-- print $ [ (length . filter (==PM) $ (ap [mon,tue,wed]) x, y)  | x<- permutations [wk1,wk2], let y = wk1]   
+
+ print $ [  (a,b,c,d,e)  
+           | a <- [0..5] 
+           , b <- [0..5]
+           , c <- [0..5]
+           , d <- [0..5]
+           , e <- [0..5]
+           , a + b + c + d + e == 2
+           ]   
+ --print $  [ [ [i ++  j ++ k  | i <- permutations [1..3]] | j <- permutations [4..6]] | k <- permutations [7..9]]
+ print $ sum[y | (x,y) <- zip[1..][20..41], monday x  ]
+ print $ [y | (x,y) <- zip [1..][20..41], tuesday x  ] 
+                             
+
+ print $ [y | (x,y) <- zip[1..][1..400], x `elem` (getindexset (fromEnum RG) 70)]
+
+ print $ getindexset 2 7         
